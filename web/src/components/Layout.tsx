@@ -54,6 +54,10 @@ export default function Layout() {
       <nav className="sidebar">
         <div className="sidebar-brand">QWFP</div>
 
+        <NavLink to="/how-it-works" className={({isActive}) => `sidebar-link ${isActive ? "active" : ""}`} style={{ fontSize: 13, opacity: 0.7 }}>
+          How It Works
+        </NavLink>
+
         {/* Executive — visible to admin and finance */}
         {(role === "admin" || role === "finance") && (
           <>

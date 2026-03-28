@@ -27,6 +27,7 @@ interface VelocityMetrics {
 }
 
 export default function TADashboard() {
+  const [showBanner, setShowBanner] = useState(() => localStorage.getItem("qwfp-dismiss-ta") !== "true");
   const { data: capacity, loading: capLoading, error: capError } = useApi<CapacitySnapshot>("/ta/capacity");
   const { data: distribution, loading: distLoading } = useApi<RecruiterWorkload[]>("/ta/workload-distribution");
   const { data: forecast, loading: forecastLoading } = useApi<ForecastResult>("/ta/capacity/forecast");
@@ -94,7 +95,7 @@ export default function TADashboard() {
     return (
       <div>
         <div className="page-header">
-          <h1>TA Capacity</h1>
+          <h1>Recruiting Dashboard</h1>
           <p>Recruiter workload and hiring pipeline</p>
         </div>
         <div className="loading">Loading TA data...</div>
@@ -106,7 +107,7 @@ export default function TADashboard() {
     return (
       <div>
         <div className="page-header">
-          <h1>TA Capacity</h1>
+          <h1>Recruiting Dashboard</h1>
           <p>Recruiter workload and hiring pipeline</p>
         </div>
         <div className="card" style={{ marginTop: 16 }}>
@@ -126,9 +127,16 @@ export default function TADashboard() {
   return (
     <div>
       <div className="page-header">
-        <h1>TA Capacity</h1>
+        <h1>Recruiting Dashboard</h1>
         <p>Recruiter workload and hiring pipeline</p>
       </div>
+
+      {showBanner && (
+        <div style={{ background: "#fef2f2", borderLeft: "4px solid var(--danger)", borderRadius: 8, padding: "12px 16px", marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "flex-start", fontSize: 14, lineHeight: 1.6, color: "#991b1b" }}>
+          <span>Your recruiting capacity dashboard. See who's overloaded, track how fast positions get filled, and forecast whether you need more recruiters to hit the hiring plan.</span>
+          <button onClick={() => { setShowBanner(false); localStorage.setItem("qwfp-dismiss-ta", "true"); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#991b1b", marginLeft: 12, flexShrink: 0 }}>×</button>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="stats-grid">

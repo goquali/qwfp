@@ -47,6 +47,11 @@ function groupByDivision(
 }
 
 export default function ExecutiveDashboard() {
+  // Welcome banner dismissal
+  const [showBanner, setShowBanner] = useState(
+    () => localStorage.getItem("qwfp-dismiss-executive") !== "true",
+  );
+
   // Step 1: Fetch planning cycles and find the active one
   const { data: cycles, loading: cyclesLoading, error: cyclesError } = useApi<PlanningCycle[]>("/finance/planning-cycles");
 
@@ -137,6 +142,8 @@ export default function ExecutiveDashboard() {
     const inPipeline = allSlots.filter((s) =>
       ["open", "sourcing", "offer"].includes(s.status),
     ).length;
+    const sourcingCount = allSlots.filter((s) => s.status === "sourcing").length;
+    const offerCount = allSlots.filter((s) => s.status === "offer").length;
 
     let budgetCommitted = 0;
     for (const env of topLevel) {
@@ -146,9 +153,9 @@ export default function ExecutiveDashboard() {
       }
     }
 
-    const fillRate = totalPlan > 0 ? (filled / totalPlan) * 100 : 0;
+    const burnPct = totalBudget > 0 ? (budgetCommitted / totalBudget) * 100 : 0;
 
-    return { totalPlan, filled, inPipeline, totalBudget, budgetCommitted, fillRate };
+    return { totalPlan, filled, inPipeline, sourcingCount, offerCount, totalBudget, budgetCommitted, burnPct };
   }, [envelopes, allSlots, utilizationMap]);
 
   // Division groupings
@@ -194,12 +201,14 @@ export default function ExecutiveDashboard() {
       .slice(0, 5);
   }, [alerts]);
 
+  const criticalAlertCount = alertsBySeverity.critical?.length ?? 0;
+
   // Loading / error states
   const isLoading = cyclesLoading || envelopesLoading || utilLoading || slotsLoading || alertsLoading || taLoading;
   const error = cyclesError || envelopesError;
 
   if (isLoading && !envelopes) {
-    return <div className="loading" style={{ padding: "48px", textAlign: "center" }}>Loading executive overview...</div>;
+    return <div className="loading" style={{ padding: "48px", textAlign: "center" }}>Loading hiring overview...</div>;
   }
 
   if (error) {
@@ -210,83 +219,113 @@ export default function ExecutiveDashboard() {
     );
   }
 
+  function dismissBanner() {
+    localStorage.setItem("qwfp-dismiss-executive", "true");
+    setShowBanner(false);
+  }
+
   return (
     <div style={{ padding: "24px", textAlign: "left" }}>
+      {/* Welcome Banner */}
+      {showBanner && (
+        <div style={bannerStyle}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: "15px", marginBottom: "4px", color: "var(--text-h)" }}>
+              Welcome to the Hiring Command Center
+            </div>
+            <div style={{ fontSize: "14px", color: "var(--text)", lineHeight: 1.5 }}>
+              Company-wide hiring progress at a glance. Green means on track, yellow means watch closely, red means action needed.
+            </div>
+          </div>
+          <button onClick={dismissBanner} style={bannerDismissStyle} aria-label="Dismiss">
+            &#10005;
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="page-header" style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "32px", margin: "0 0 4px" }}>Executive Overview</h1>
+        <h1 style={{ fontSize: "32px", margin: "0 0 4px" }}>Hiring Command Center</h1>
         <p style={{ color: "var(--text-muted)", fontSize: "15px" }}>
           FY26 Workforce Plan
           {activeCycle && <> &mdash; {activeCycle.name}</>}
         </p>
       </div>
 
-      {/* Stats Row */}
+      {/* Stats Row — simplified to 4 cards */}
       {stats && (
         <div
           className="stats-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
+            gridTemplateColumns: "repeat(4, 1fr)",
             gap: "16px",
             marginBottom: "32px",
           }}
         >
-          <div className="stat-card card" style={statCardStyle}>
-            <div className="stat-label" style={statLabelStyle}>Total Headcount Plan</div>
-            <div className="stat-value" style={statValueStyle}>{stats.totalPlan}</div>
-            <div className="stat-sub" style={statSubStyle}>positions planned</div>
-          </div>
-
-          <div className="stat-card card" style={statCardStyle}>
+          {/* Positions Filled */}
+          <div className="stat-card card" style={{
+            ...statCardStyle,
+            borderLeft: `4px solid ${stats.totalPlan > 0 && (stats.filled / stats.totalPlan) >= 0.75 ? "#22c55e" : stats.totalPlan > 0 && (stats.filled / stats.totalPlan) >= 0.4 ? "#eab308" : "#ef4444"}`,
+          }}>
             <div className="stat-label" style={statLabelStyle}>Positions Filled</div>
-            <div className="stat-value" style={statValueStyle}>{stats.filled}</div>
-            <div className="stat-sub" style={statSubStyle}>hires completed</div>
-          </div>
-
-          <div className="stat-card card" style={statCardStyle}>
-            <div className="stat-label" style={statLabelStyle}>In Pipeline</div>
-            <div className="stat-value" style={statValueStyle}>{stats.inPipeline}</div>
-            <div className="stat-sub" style={statSubStyle}>open + sourcing + offer</div>
-          </div>
-
-          <div className="stat-card card" style={statCardStyle}>
-            <div className="stat-label" style={statLabelStyle}>Total Budget</div>
             <div className="stat-value" style={statValueStyle}>
-              <MoneyDisplay amount={stats.totalBudget} compact />
+              {stats.filled} of {stats.totalPlan}
             </div>
-            <div className="stat-sub" style={statSubStyle}>comp budget</div>
+            <div style={{ marginTop: "8px" }}>
+              <ProgressBar value={stats.filled} max={stats.totalPlan} />
+            </div>
+            <div className="stat-sub" style={statSubStyle}>hires completed vs. plan</div>
           </div>
 
-          <div className="stat-card card" style={statCardStyle}>
-            <div className="stat-label" style={statLabelStyle}>Budget Committed</div>
-            <div className="stat-value" style={statValueStyle}>
-              <MoneyDisplay amount={stats.budgetCommitted} compact />
+          {/* Budget Burn */}
+          <div className="stat-card card" style={{
+            ...statCardStyle,
+            borderLeft: `4px solid ${stats.burnPct > 90 ? "#ef4444" : stats.burnPct > 70 ? "#eab308" : "#22c55e"}`,
+          }}>
+            <div className="stat-label" style={statLabelStyle}>Budget Burn</div>
+            <div className="stat-value" style={{
+              ...statValueStyle,
+              color: stats.burnPct > 90 ? "#ef4444" : stats.burnPct > 70 ? "#eab308" : "#22c55e",
+            }}>
+              {stats.burnPct.toFixed(0)}% committed
             </div>
             <div className="stat-sub" style={statSubStyle}>
-              {stats.totalBudget > 0
-                ? `${((stats.budgetCommitted / stats.totalBudget) * 100).toFixed(1)}% of total`
-                : "0%"}
+              <MoneyDisplay amount={stats.budgetCommitted} compact /> of <MoneyDisplay amount={stats.totalBudget} compact />
             </div>
           </div>
 
-          <div className="stat-card card" style={statCardStyle}>
-            <div className="stat-label" style={statLabelStyle}>Fill Rate</div>
-            <div
-              className="stat-value"
-              style={{
-                ...statValueStyle,
-                color:
-                  stats.fillRate >= 75
-                    ? "var(--success)"
-                    : stats.fillRate >= 40
-                    ? "var(--warning)"
-                    : "var(--danger)",
-              }}
-            >
-              {stats.fillRate.toFixed(1)}%
+          {/* Pipeline */}
+          <div className="stat-card card" style={{
+            ...statCardStyle,
+            borderLeft: "4px solid #6366f1",
+          }}>
+            <div className="stat-label" style={statLabelStyle}>Pipeline</div>
+            <div className="stat-value" style={statValueStyle}>
+              {stats.inPipeline} in pipeline
             </div>
-            <div className="stat-sub" style={statSubStyle}>filled / planned</div>
+            <div className="stat-sub" style={statSubStyle}>
+              {stats.sourcingCount} sourcing, {stats.offerCount} in offer
+            </div>
+          </div>
+
+          {/* Alerts */}
+          <div className="stat-card card" style={{
+            ...statCardStyle,
+            borderLeft: `4px solid ${criticalAlertCount > 0 ? "#ef4444" : (alerts?.length ?? 0) > 0 ? "#eab308" : "#22c55e"}`,
+          }}>
+            <div className="stat-label" style={statLabelStyle}>Alerts</div>
+            <div className="stat-value" style={{
+              ...statValueStyle,
+              color: criticalAlertCount > 0 ? "#ef4444" : (alerts?.length ?? 0) > 0 ? "#eab308" : "#22c55e",
+            }}>
+              {alerts?.length ?? 0} active
+            </div>
+            <div className="stat-sub" style={statSubStyle}>
+              {criticalAlertCount > 0
+                ? `${criticalAlertCount} critical`
+                : "no critical issues"}
+            </div>
           </div>
         </div>
       )}
@@ -440,7 +479,7 @@ export default function ExecutiveDashboard() {
         <div className="card" style={cardStyle}>
           <div className="card-header" style={cardHeaderStyle}>
             <h2 style={{ margin: 0, fontSize: "18px" }}>
-              Active Alerts
+              Budget Alerts
               {alerts && <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: "14px" }}> ({alerts.length})</span>}
             </h2>
           </div>
@@ -513,11 +552,11 @@ export default function ExecutiveDashboard() {
         {/* Right: TA Capacity Summary */}
         <div className="card" style={cardStyle}>
           <div className="card-header" style={cardHeaderStyle}>
-            <h2 style={{ margin: 0, fontSize: "18px" }}>TA Capacity</h2>
+            <h2 style={{ margin: 0, fontSize: "18px" }}>Recruiting Capacity</h2>
           </div>
           <div style={{ padding: "16px" }}>
             {taLoading && !taCapacity && (
-              <div className="loading" style={{ padding: "24px" }}>Loading TA data...</div>
+              <div className="loading" style={{ padding: "24px" }}>Loading recruiting data...</div>
             )}
             {taCapacity && (
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -550,14 +589,16 @@ export default function ExecutiveDashboard() {
                   }}
                 >
                   {taCapacity.capacityGap > 0
-                    ? `Overloaded — need ${taCapacity.capacityGap} more recruiter${taCapacity.capacityGap !== 1 ? "s" : ""}`
-                    : "Capacity sufficient"}
+                    ? `Overloaded by ${taCapacity.capacityGap} — need more recruiter${taCapacity.capacityGap !== 1 ? "s" : ""}`
+                    : taCapacity.capacityGap < 0
+                    ? `${Math.abs(taCapacity.capacityGap)} capacity surplus`
+                    : "Capacity balanced"}
                 </div>
               </div>
             )}
             {!taLoading && !taCapacity && (
               <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "14px", padding: "16px 0" }}>
-                TA capacity data unavailable
+                Recruiting capacity data unavailable
               </p>
             )}
           </div>
@@ -566,6 +607,29 @@ export default function ExecutiveDashboard() {
     </div>
   );
 }
+
+// Banner styles
+const bannerStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "16px",
+  padding: "16px 20px",
+  marginBottom: "24px",
+  borderRadius: "8px",
+  backgroundColor: "#eff6ff",
+  borderLeft: "4px solid #3b82f6",
+};
+
+const bannerDismissStyle: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  fontSize: "16px",
+  cursor: "pointer",
+  color: "#6b7280",
+  padding: "0 4px",
+  lineHeight: 1,
+  flexShrink: 0,
+};
 
 // Inline style constants
 const cardStyle: React.CSSProperties = {
