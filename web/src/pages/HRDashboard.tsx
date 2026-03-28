@@ -67,7 +67,6 @@ export default function HRDashboard() {
     data: envelopes,
     loading: envelopesLoading,
     error: envelopesError,
-    refetch: refetchEnvelopes,
   } = useApi<BudgetEnvelope[]>(
     activeCycle ? `/finance/planning-cycles/${activeCycle.id}/envelopes` : null,
   );
@@ -97,8 +96,6 @@ export default function HRDashboard() {
   // Team-level envelopes for the create form (leaf envelopes)
   const teamEnvelopes = useMemo(() => {
     if (!envelopes) return [];
-    const parentIds = new Set(envelopes.map((e) => e.id));
-    const childParentIds = new Set(envelopes.filter((e) => e.parentEnvelopeId).map((e) => e.parentEnvelopeId!));
     // Leaf envelopes = those whose id is NOT a parentEnvelopeId of any other envelope
     return envelopes.filter((e) => !envelopes.some((child) => child.parentEnvelopeId === e.id));
   }, [envelopes]);
@@ -146,10 +143,10 @@ export default function HRDashboard() {
   }, [envelopes, refreshKey]);
 
   // Step 6: Fetch change requests
-  const { data: changeRequests, loading: crLoading, refetch: refetchCRs } = useApi<ChangeRequest[]>("/hr/change-requests");
+  const { data: changeRequests, refetch: refetchCRs } = useApi<ChangeRequest[]>("/hr/change-requests");
 
   // Step 7: Fetch alerts
-  const { data: alerts, loading: alertsLoading, refetch: refetchAlerts } = useApi<DriftAlert[]>("/reconciliation/alerts");
+  const { data: alerts, refetch: refetchAlerts } = useApi<DriftAlert[]>("/reconciliation/alerts");
 
   // Re-fetch CRs and alerts on refreshKey change
   useEffect(() => {
