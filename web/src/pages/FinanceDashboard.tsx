@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useApi } from "../hooks/useApi";
-import { get } from "../api/client";
+import { get, patch } from "../api/client";
 import type {
   PlanningCycle,
   BudgetEnvelope,
@@ -65,7 +65,30 @@ export default function FinanceDashboard() {
   }, [envelopes]);
 
   // Step 4: Fetch alerts
-  const { data: alerts, loading: alertsLoading } = useApi<DriftAlert[]>("/reconciliation/alerts");
+  const { data: alerts, loading: alertsLoading, refetch: refetchAlerts } = useApi<DriftAlert[]>("/reconciliation/alerts");
+
+  // Alert dismiss state
+  const [dismissingAlert, setDismissingAlert] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  async function handleDismissAlert(alertId: string) {
+    setDismissingAlert(alertId);
+    try {
+      await patch(`/reconciliation/alerts/${alertId}`, { status: "acknowledged" });
+      setToast({ message: "Alert acknowledged", type: "success" });
+      refetchAlerts();
+    } catch {
+      setToast({ message: "Failed to acknowledge alert", type: "error" });
+    } finally {
+      setDismissingAlert(null);
+    }
+  }
 
   // Step 5: Fetch org units for team names
   const { data: orgUnits } = useApi<OrgUnit[]>("/org-units");
@@ -191,6 +214,12 @@ export default function FinanceDashboard() {
 
   return (
     <div style={{ padding: "24px", textAlign: "left" }}>
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 200, padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#fff", background: toast.type === "success" ? "var(--success)" : "var(--danger)", boxShadow: "var(--shadow-lg)" }}>
+          {toast.message}
+        </div>
+      )}
       {/* Welcome Banner */}
       {showBanner && (
         <div style={bannerStyle}>
@@ -464,6 +493,14 @@ export default function FinanceDashboard() {
                     {alert.alertType.replace(/envelope/gi, "team budget").replace(/drift/gi, "budget")} &middot; Enforcement: {alert.enforcement}
                   </div>
                 </div>
+                <button
+                  className="btn btn-sm btn-ghost"
+                  disabled={dismissingAlert === alert.id}
+                  onClick={() => handleDismissAlert(alert.id)}
+                  style={{ flexShrink: 0, fontSize: 12 }}
+                >
+                  {dismissingAlert === alert.id ? "..." : "Acknowledge"}
+                </button>
               </div>
             ))}
             {(!alerts || alerts.length === 0) && (
