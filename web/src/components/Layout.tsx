@@ -6,6 +6,7 @@ import type { User } from "../api/types";
 export default function Layout() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     // Bootstrap: set a temporary admin user so we can fetch the user list
@@ -18,7 +19,8 @@ export default function Layout() {
         setSelectedUserId(finance.id);
         setCurrentUser({ id: finance.id, role: finance.role, name: finance.name });
       }
-    });
+      setReady(true);
+    }).catch(() => setReady(true));
   }, []);
 
   const selectedUser = users.find(u => u.id === selectedUserId);
@@ -98,7 +100,7 @@ export default function Layout() {
       </nav>
 
       <main className="main-content">
-        <Outlet />
+        {ready ? <Outlet /> : <div className="loading">Loading...</div>}
       </main>
     </div>
   );
