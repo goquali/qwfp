@@ -13,11 +13,11 @@ export default function Layout() {
     setCurrentUser({ id: "bootstrap", role: "admin", name: "Bootstrap" });
     get<User[]>("/users").then((data) => {
       setUsers(data);
-      // Default to finance user (Sarah)
-      const finance = data.find(u => u.role === "finance");
-      if (finance) {
-        setSelectedUserId(finance.id);
-        setCurrentUser({ id: finance.id, role: finance.role, name: finance.name });
+      // Default to admin user (Alex) for Executive overview
+      const defaultUser = data.find(u => u.role === "admin") || data.find(u => u.role === "finance") || data[0];
+      if (defaultUser) {
+        setSelectedUserId(defaultUser.id);
+        setCurrentUser({ id: defaultUser.id, role: defaultUser.role, name: defaultUser.name });
       }
       setReady(true);
     }).catch(() => setReady(true));
@@ -41,7 +41,17 @@ export default function Layout() {
       <nav className="sidebar">
         <div className="sidebar-brand">QWFP</div>
 
-        {/* Finance links - visible to finance and admin */}
+        {/* Executive — visible to admin and finance */}
+        {(role === "admin" || role === "finance") && (
+          <>
+            <div className="sidebar-section">Executive</div>
+            <NavLink to="/executive" className={({isActive}) => `sidebar-link ${isActive ? "active" : ""}`}>
+              Company Overview
+            </NavLink>
+          </>
+        )}
+
+        {/* Finance links */}
         {(role === "finance" || role === "admin") && (
           <>
             <div className="sidebar-section">Finance</div>
@@ -78,14 +88,6 @@ export default function Layout() {
             <NavLink to="/ta" className={({isActive}) => `sidebar-link ${isActive ? "active" : ""}`}>
               TA Capacity
             </NavLink>
-          </>
-        )}
-
-        {/* Admin sees all */}
-        {role === "admin" && (
-          <>
-            <div className="sidebar-section">Admin</div>
-            <NavLink to="/finance" className={({isActive}) => `sidebar-link ${isActive ? "active" : ""}`}>All Dashboards</NavLink>
           </>
         )}
 

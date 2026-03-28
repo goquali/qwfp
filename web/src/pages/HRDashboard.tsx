@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useApi } from "../hooks/useApi";
-import { get } from "../api/client";
+import { get, post, patch } from "../api/client";
 import type {
   PlanningCycle,
   BudgetEnvelope,
@@ -14,7 +14,46 @@ import StatusBadge from "../components/StatusBadge";
 import ProgressBar from "../components/ProgressBar";
 import MoneyDisplay from "../components/MoneyDisplay";
 
+interface JobFamily {
+  id: string;
+  name: string;
+  code: string;
+}
+
+type ToastState = { message: string; type: "success" | "error" } | null;
+
+const LEVELS = ["L1", "L2", "L3", "L4", "L5", "L6"];
+const WORKER_TYPES = ["fte", "contractor", "contingent"];
+
+const SLOT_TRANSITIONS: Record<string, { label: string; next: string } | null> = {
+  draft: { label: "Open", next: "open" },
+  open: { label: "Start Sourcing", next: "sourcing" },
+  sourcing: { label: "Make Offer", next: "offer" },
+  offer: { label: "Mark Filled", next: "filled" },
+  filled: null,
+  cancelled: null,
+};
+
 export default function HRDashboard() {
+  // Refresh key — increment after any mutation to re-fetch data
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  // Toast
+  const [toast, setToast] = useState<ToastState>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const showToast = useCallback((message: string, type: "success" | "error") => {
+    setToast({ message, type });
+  }, []);
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+
   // Step 1: Fetch planning cycles and find the active one
   const { data: cycles, loading: cyclesLoading, error: cyclesError } = useApi<PlanningCycle[]>("/finance/planning-cycles");
 
@@ -28,12 +67,16 @@ export default function HRDashboard() {
     data: envelopes,
     loading: envelopesLoading,
     error: envelopesError,
+    refetch: refetchEnvelopes,
   } = useApi<BudgetEnvelope[]>(
     activeCycle ? `/finance/planning-cycles/${activeCycle.id}/envelopes` : null,
   );
 
   // Step 3: Fetch org units for team names
   const { data: orgUnits } = useApi<OrgUnit[]>("/org-units");
+
+  // Step 3b: Fetch job families
+  const { data: jobFamilies } = useApi<JobFamily[]>("/hr/job-families");
 
   const orgUnitMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -51,13 +94,21 @@ export default function HRDashboard() {
     return map;
   }, [envelopes, orgUnitMap]);
 
+  // Team-level envelopes for the create form (leaf envelopes)
+  const teamEnvelopes = useMemo(() => {
+    if (!envelopes) return [];
+    const parentIds = new Set(envelopes.map((e) => e.id));
+    const childParentIds = new Set(envelopes.filter((e) => e.parentEnvelopeId).map((e) => e.parentEnvelopeId!));
+    // Leaf envelopes = those whose id is NOT a parentEnvelopeId of any other envelope
+    return envelopes.filter((e) => !envelopes.some((child) => child.parentEnvelopeId === e.id));
+  }, [envelopes]);
+
   // Step 4: Batch-fetch slots for leaf envelopes (team-level)
   const [allSlots, setAllSlots] = useState<JobSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
-  useEffect(() => {
+  const fetchSlots = useCallback(() => {
     if (!envelopes || envelopes.length === 0) return;
-    // Fetch slots for all envelopes (leaf envelopes = those without children, but we fetch all)
     setSlotsLoading(true);
     Promise.all(
       envelopes.map((e) =>
@@ -71,6 +122,10 @@ export default function HRDashboard() {
       })
       .finally(() => setSlotsLoading(false));
   }, [envelopes]);
+
+  useEffect(() => {
+    fetchSlots();
+  }, [fetchSlots, refreshKey]);
 
   // Step 5: Batch-fetch utilization
   const [utilizationMap, setUtilizationMap] = useState<Record<string, EnvelopeUtilization>>({});
@@ -88,13 +143,21 @@ export default function HRDashboard() {
       });
       setUtilizationMap(map);
     });
-  }, [envelopes]);
+  }, [envelopes, refreshKey]);
 
   // Step 6: Fetch change requests
-  const { data: changeRequests, loading: crLoading } = useApi<ChangeRequest[]>("/hr/change-requests");
+  const { data: changeRequests, loading: crLoading, refetch: refetchCRs } = useApi<ChangeRequest[]>("/hr/change-requests");
 
   // Step 7: Fetch alerts
-  const { data: alerts, loading: alertsLoading } = useApi<DriftAlert[]>("/reconciliation/alerts");
+  const { data: alerts, loading: alertsLoading, refetch: refetchAlerts } = useApi<DriftAlert[]>("/reconciliation/alerts");
+
+  // Re-fetch CRs and alerts on refreshKey change
+  useEffect(() => {
+    if (refreshKey > 0) {
+      refetchCRs();
+      refetchAlerts();
+    }
+  }, [refreshKey, refetchCRs, refetchAlerts]);
 
   // Compute stats
   const stats = useMemo(() => {
@@ -118,6 +181,67 @@ export default function HRDashboard() {
     return { openSlots, pendingCRs, activeAlerts, avgFlex };
   }, [allSlots, changeRequests, alerts, utilizationMap]);
 
+  // --- Slot status transition ---
+  const [transitioningSlot, setTransitioningSlot] = useState<string | null>(null);
+
+  const handleSlotTransition = async (slotId: string, nextStatus: string) => {
+    setTransitioningSlot(slotId);
+    try {
+      await post(`/hr/slots/${slotId}/status`, { status: nextStatus });
+      showToast(`Slot transitioned to ${nextStatus}`, "success");
+      refresh();
+    } catch (err: any) {
+      showToast(err.message || "Failed to transition slot", "error");
+    } finally {
+      setTransitioningSlot(null);
+    }
+  };
+
+  const handleCancelSlot = async (slotId: string) => {
+    setTransitioningSlot(slotId);
+    try {
+      await post(`/hr/slots/${slotId}/status`, { status: "cancelled" });
+      showToast("Slot cancelled", "success");
+      refresh();
+    } catch (err: any) {
+      showToast(err.message || "Failed to cancel slot", "error");
+    } finally {
+      setTransitioningSlot(null);
+    }
+  };
+
+  // --- Change request approve/reject ---
+  const [actingOnCR, setActingOnCR] = useState<string | null>(null);
+
+  const handleCRAction = async (crId: string, status: "approved" | "rejected") => {
+    setActingOnCR(crId);
+    try {
+      await patch(`/hr/change-requests/${crId}`, { status });
+      showToast(`Change request ${status}`, "success");
+      refresh();
+    } catch (err: any) {
+      showToast(err.message || `Failed to ${status} change request`, "error");
+    } finally {
+      setActingOnCR(null);
+    }
+  };
+
+  // --- Alert dismiss ---
+  const [dismissingAlert, setDismissingAlert] = useState<string | null>(null);
+
+  const handleDismissAlert = async (alertId: string) => {
+    setDismissingAlert(alertId);
+    try {
+      await patch(`/reconciliation/alerts/${alertId}`, { status: "acknowledged" });
+      showToast("Alert dismissed", "success");
+      refresh();
+    } catch (err: any) {
+      showToast(err.message || "Failed to dismiss alert", "error");
+    } finally {
+      setDismissingAlert(null);
+    }
+  };
+
   // Loading / error
   const isLoading = cyclesLoading || envelopesLoading || slotsLoading;
   const error = cyclesError || envelopesError;
@@ -135,14 +259,60 @@ export default function HRDashboard() {
   }
 
   return (
-    <div style={{ padding: "24px", textAlign: "left" }}>
+    <div style={{ padding: "24px", textAlign: "left", position: "relative" }}>
+      {/* Toast */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            top: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 200,
+            padding: "10px 24px",
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: 500,
+            color: "#fff",
+            backgroundColor: toast.type === "success" ? "var(--success)" : "var(--danger)",
+            boxShadow: "var(--shadow-lg)",
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
+
       {/* Page Header */}
-      <div className="page-header" style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "32px", margin: "0 0 4px" }}>HR Orchestration</h1>
-        <p style={{ color: "var(--text)", fontSize: "15px" }}>
-          Manage hiring within budget guardrails
-        </p>
+      <div className="page-header" style={{ marginBottom: "32px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div>
+          <h1 style={{ fontSize: "32px", margin: "0 0 4px" }}>HR Orchestration</h1>
+          <p style={{ color: "var(--text)", fontSize: "15px" }}>
+            Manage hiring within budget guardrails
+          </p>
+        </div>
+        <button
+          className="btn btn-primary"
+          onClick={() => setShowModal(true)}
+        >
+          + New Slot
+        </button>
       </div>
+
+      {/* Create Slot Modal */}
+      {showModal && (
+        <CreateSlotModal
+          envelopes={teamEnvelopes}
+          envelopeTeamMap={envelopeTeamMap}
+          jobFamilies={jobFamilies ?? []}
+          onClose={() => setShowModal(false)}
+          onSuccess={() => {
+            setShowModal(false);
+            showToast("Job slot created", "success");
+            refresh();
+          }}
+          onError={(msg) => showToast(msg, "error")}
+        />
+      )}
 
       {/* Stats Grid */}
       <div
@@ -201,32 +371,88 @@ export default function HRDashboard() {
                   <th style={thStyle}>Comp</th>
                   <th style={thStyle}>Status</th>
                   <th style={thStyle}>Start Date</th>
+                  <th style={thStyle}>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {allSlots.map((slot) => (
-                  <tr key={slot.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td style={tdStyle}>
-                      <span style={{ fontWeight: 500, color: "var(--text-h)" }}>{slot.roleTitle}</span>
-                    </td>
-                    <td style={tdStyle}>{slot.level || "--"}</td>
-                    <td style={tdStyle}>{envelopeTeamMap[slot.envelopeId] || "--"}</td>
-                    <td style={tdStyle}>
-                      {slot.totalComp ? <MoneyDisplay amount={slot.totalComp} compact /> : "--"}
-                    </td>
-                    <td style={tdStyle}>
-                      <StatusBadge status={slot.status} />
-                    </td>
-                    <td style={tdStyle}>
-                      {slot.targetStartDate
-                        ? new Date(slot.targetStartDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                        : "--"}
-                    </td>
-                  </tr>
-                ))}
+                {allSlots.map((slot) => {
+                  const transition = SLOT_TRANSITIONS[slot.status] ?? null;
+                  const isTransitioning = transitioningSlot === slot.id;
+                  const canCancel = !["filled", "cancelled"].includes(slot.status);
+
+                  return (
+                    <tr key={slot.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={tdStyle}>
+                        <span style={{ fontWeight: 500, color: "var(--text-h)" }}>{slot.roleTitle}</span>
+                      </td>
+                      <td style={tdStyle}>{slot.level || "--"}</td>
+                      <td style={tdStyle}>{envelopeTeamMap[slot.envelopeId] || "--"}</td>
+                      <td style={tdStyle}>
+                        {slot.totalComp ? <MoneyDisplay amount={slot.totalComp} compact /> : "--"}
+                      </td>
+                      <td style={tdStyle}>
+                        <StatusBadge status={slot.status} />
+                      </td>
+                      <td style={tdStyle}>
+                        {slot.targetStartDate
+                          ? new Date(slot.targetStartDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                          : "--"}
+                      </td>
+                      <td style={tdStyle}>
+                        {transition ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                            <button
+                              className="btn btn-sm btn-primary"
+                              disabled={isTransitioning}
+                              onClick={() => handleSlotTransition(slot.id, transition.next)}
+                              style={{ opacity: isTransitioning ? 0.6 : 1 }}
+                            >
+                              {isTransitioning ? "..." : transition.label}
+                            </button>
+                            {canCancel && (
+                              <button
+                                disabled={isTransitioning}
+                                onClick={() => handleCancelSlot(slot.id)}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "var(--danger)",
+                                  fontSize: "12px",
+                                  cursor: isTransitioning ? "default" : "pointer",
+                                  padding: "2px 4px",
+                                  opacity: isTransitioning ? 0.5 : 1,
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </span>
+                        ) : canCancel ? (
+                          <button
+                            disabled={isTransitioning}
+                            onClick={() => handleCancelSlot(slot.id)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "var(--danger)",
+                              fontSize: "12px",
+                              cursor: isTransitioning ? "default" : "pointer",
+                              padding: "2px 4px",
+                              opacity: isTransitioning ? 0.5 : 1,
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        ) : (
+                          <span style={{ color: "var(--text)", fontSize: "13px" }}>&mdash;</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {allSlots.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "var(--text)" }}>
+                    <td colSpan={7} style={{ ...tdStyle, textAlign: "center", color: "var(--text)" }}>
                       No job slots found
                     </td>
                   </tr>
@@ -350,6 +576,37 @@ export default function HRDashboard() {
                         {cr.targetRoleTitle && <>{cr.targetRoleTitle} {cr.targetLevel ? `(${cr.targetLevel})` : ""} &middot; </>}
                         {new Date(cr.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </div>
+                      {/* Approve / Reject buttons */}
+                      <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                        <button
+                          className="btn btn-sm"
+                          disabled={actingOnCR === cr.id}
+                          onClick={() => handleCRAction(cr.id, "approved")}
+                          style={{
+                            backgroundColor: "var(--success)",
+                            color: "#fff",
+                            opacity: actingOnCR === cr.id ? 0.6 : 1,
+                          }}
+                        >
+                          {actingOnCR === cr.id ? "..." : "Approve"}
+                        </button>
+                        <button
+                          disabled={actingOnCR === cr.id}
+                          onClick={() => handleCRAction(cr.id, "rejected")}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "var(--danger)",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            cursor: actingOnCR === cr.id ? "default" : "pointer",
+                            padding: "4px 10px",
+                            opacity: actingOnCR === cr.id ? 0.5 : 1,
+                          }}
+                        >
+                          Reject
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -392,6 +649,22 @@ export default function HRDashboard() {
                       {alert.alertType}
                     </div>
                   </div>
+                  <button
+                    className="btn btn-sm"
+                    disabled={dismissingAlert === alert.id}
+                    onClick={() => handleDismissAlert(alert.id)}
+                    style={{
+                      background: "none",
+                      border: "1px solid var(--border)",
+                      color: "var(--text)",
+                      fontSize: "12px",
+                      cursor: dismissingAlert === alert.id ? "default" : "pointer",
+                      opacity: dismissingAlert === alert.id ? 0.5 : 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {dismissingAlert === alert.id ? "..." : "Dismiss"}
+                  </button>
                 </div>
               ))}
               {(!alerts || alerts.length === 0) && (
@@ -407,7 +680,298 @@ export default function HRDashboard() {
   );
 }
 
-// Inline style constants for layout
+// ============================================================
+// Create Slot Modal
+// ============================================================
+
+interface CreateSlotModalProps {
+  envelopes: BudgetEnvelope[];
+  envelopeTeamMap: Record<string, string>;
+  jobFamilies: JobFamily[];
+  onClose: () => void;
+  onSuccess: () => void;
+  onError: (msg: string) => void;
+}
+
+function CreateSlotModal({ envelopes, envelopeTeamMap, jobFamilies, onClose, onSuccess, onError }: CreateSlotModalProps) {
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const [envelopeId, setEnvelopeId] = useState(envelopes[0]?.id ?? "");
+  const [roleTitle, setRoleTitle] = useState("");
+  const [level, setLevel] = useState("L3");
+  const [jobFamilyId, setJobFamilyId] = useState(jobFamilies[0]?.id ?? "");
+  const [baseSalary, setBaseSalary] = useState("");
+  const [equityValue, setEquityValue] = useState("");
+  const [bonusTarget, setBonusTarget] = useState("");
+  const [benefitsCost, setBenefitsCost] = useState("");
+  const [workerType, setWorkerType] = useState("fte");
+  const [targetStartDate, setTargetStartDate] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!roleTitle.trim()) {
+      setFormError("Role title is required");
+      return;
+    }
+    if (!envelopeId) {
+      setFormError("Please select an envelope");
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError(null);
+
+    const toMoney = (val: string) => {
+      const n = parseFloat(val);
+      return isNaN(n) ? undefined : `${n.toFixed(2)}`;
+    };
+
+    const body: Record<string, any> = {
+      roleTitle: roleTitle.trim(),
+      level,
+      workerType,
+    };
+
+    if (jobFamilyId) body.jobFamilyId = jobFamilyId;
+    if (baseSalary) body.baseSalary = toMoney(baseSalary);
+    if (equityValue) body.equityValue = toMoney(equityValue);
+    if (bonusTarget) body.bonusTarget = toMoney(bonusTarget);
+    if (benefitsCost) body.benefitsCost = toMoney(benefitsCost);
+    if (targetStartDate) body.targetStartDate = targetStartDate;
+
+    try {
+      await post(`/hr/envelopes/${envelopeId}/slots`, body);
+      onSuccess();
+    } catch (err: any) {
+      const msg = err.message || err.error || "Failed to create slot";
+      setFormError(msg);
+      onError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: "12px",
+          padding: "24px",
+          maxWidth: "500px",
+          width: "90%",
+          maxHeight: "80vh",
+          overflowY: "auto",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <h2 style={{ margin: 0, fontSize: "20px" }}>New Job Slot</h2>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "var(--text)", padding: "4px" }}
+          >
+            &times;
+          </button>
+        </div>
+
+        {formError && (
+          <div style={{ padding: "8px 12px", borderRadius: "var(--radius)", backgroundColor: "var(--danger-light)", color: "var(--danger)", fontSize: "13px", marginBottom: "16px" }}>
+            {formError}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          {/* Envelope */}
+          <div style={{ marginBottom: "16px" }}>
+            <label style={formLabelStyle}>Envelope</label>
+            <select
+              value={envelopeId}
+              onChange={(e) => setEnvelopeId(e.target.value)}
+              style={formInputStyle}
+            >
+              {envelopes.map((env) => (
+                <option key={env.id} value={env.id}>
+                  {envelopeTeamMap[env.id] || env.id}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Role Title */}
+          <div style={{ marginBottom: "16px" }}>
+            <label style={formLabelStyle}>Role Title</label>
+            <input
+              type="text"
+              required
+              value={roleTitle}
+              onChange={(e) => setRoleTitle(e.target.value)}
+              placeholder="e.g. Senior Software Engineer"
+              style={formInputStyle}
+            />
+          </div>
+
+          {/* Level + Job Family row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+            <div>
+              <label style={formLabelStyle}>Level</label>
+              <select value={level} onChange={(e) => setLevel(e.target.value)} style={formInputStyle}>
+                {LEVELS.map((l) => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={formLabelStyle}>Job Family</label>
+              <select value={jobFamilyId} onChange={(e) => setJobFamilyId(e.target.value)} style={formInputStyle}>
+                <option value="">-- Select --</option>
+                {jobFamilies.map((jf) => (
+                  <option key={jf.id} value={jf.id}>{jf.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Salary + Equity row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+            <div>
+              <label style={formLabelStyle}>Base Salary</label>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={baseSalary}
+                onChange={(e) => setBaseSalary(e.target.value)}
+                placeholder="150000"
+                style={formInputStyle}
+              />
+            </div>
+            <div>
+              <label style={formLabelStyle}>Equity Value</label>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={equityValue}
+                onChange={(e) => setEquityValue(e.target.value)}
+                placeholder="50000"
+                style={formInputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Bonus + Benefits row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+            <div>
+              <label style={formLabelStyle}>Bonus Target</label>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={bonusTarget}
+                onChange={(e) => setBonusTarget(e.target.value)}
+                placeholder="20000"
+                style={formInputStyle}
+              />
+            </div>
+            <div>
+              <label style={formLabelStyle}>Benefits Cost</label>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={benefitsCost}
+                onChange={(e) => setBenefitsCost(e.target.value)}
+                placeholder="15000"
+                style={formInputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Worker Type + Start Date row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
+            <div>
+              <label style={formLabelStyle}>Worker Type</label>
+              <select value={workerType} onChange={(e) => setWorkerType(e.target.value)} style={formInputStyle}>
+                {WORKER_TYPES.map((wt) => (
+                  <option key={wt} value={wt}>{wt}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={formLabelStyle}>Target Start Date</label>
+              <input
+                type="date"
+                value={targetStartDate}
+                onChange={(e) => setTargetStartDate(e.target.value)}
+                style={formInputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "var(--radius)",
+                border: "1px solid var(--border)",
+                background: "white",
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={submitting}
+              style={{ opacity: submitting ? 0.6 : 1 }}
+            >
+              {submitting ? "Creating..." : "Create Slot"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Inline style constants
+// ============================================================
+
+const formLabelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: "13px",
+  fontWeight: 500,
+  marginBottom: "4px",
+  color: "var(--text-h)",
+};
+
+const formInputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "8px 12px",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius)",
+  fontSize: "14px",
+  boxSizing: "border-box",
+};
+
 const cardStyle: React.CSSProperties = {
   border: "1px solid var(--border)",
   borderRadius: "12px",
