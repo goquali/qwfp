@@ -1,20 +1,31 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { get, setCurrentUser } from "../api/client";
 import type { User } from "../api/types";
+
+const ROLE_HOME: Record<string, string> = {
+  admin: "/executive",
+  finance: "/finance",
+  hr: "/hr",
+  business_owner: "/team",
+  ta: "/ta",
+};
 
 export default function Layout() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [ready, setReady] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Bootstrap: set a temporary admin user so we can fetch the user list
     setCurrentUser({ id: "bootstrap", role: "admin", name: "Bootstrap" });
     get<User[]>("/users").then((data) => {
       setUsers(data);
-      // Default to admin user (Alex) for Executive overview
-      const defaultUser = data.find(u => u.role === "admin") || data.find(u => u.role === "finance") || data[0];
+      // Check localStorage for previously selected user
+      const savedId = localStorage.getItem("qwfp-user-id");
+      const savedUser = savedId ? data.find(u => u.id === savedId) : null;
+      const defaultUser = savedUser || data.find(u => u.role === "admin") || data.find(u => u.role === "finance") || data[0];
       if (defaultUser) {
         setSelectedUserId(defaultUser.id);
         setCurrentUser({ id: defaultUser.id, role: defaultUser.role, name: defaultUser.name });
@@ -31,8 +42,10 @@ export default function Layout() {
     if (user) {
       setSelectedUserId(user.id);
       setCurrentUser({ id: user.id, role: user.role, name: user.name });
-      // Force re-render of child routes
-      window.location.reload();
+      localStorage.setItem("qwfp-user-id", user.id);
+      // Navigate to the role's home page and refresh data
+      navigate(ROLE_HOME[user.role] || "/executive");
+      setRefreshKey(k => k + 1);
     }
   }
 
@@ -102,7 +115,7 @@ export default function Layout() {
       </nav>
 
       <main className="main-content">
-        {ready ? <Outlet /> : <div className="loading">Loading...</div>}
+        {ready ? <Outlet key={refreshKey} /> : <div className="loading">Loading...</div>}
       </main>
     </div>
   );
