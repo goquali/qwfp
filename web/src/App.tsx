@@ -7,6 +7,8 @@ import HRDashboard from "./pages/HRDashboard";
 import TeamDashboard from "./pages/TeamDashboard";
 import TADashboard from "./pages/TADashboard";
 import HowItWorks from "./pages/HowItWorks";
+import Onboarding from "./pages/Onboarding";
+import Pricing from "./pages/Pricing";
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
           <Route path="/team" element={<TeamDashboard />} />
           <Route path="/ta" element={<TADashboard />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/pricing" element={<Pricing />} />
         </Route>
       </Routes>
     </BrowserRouter>

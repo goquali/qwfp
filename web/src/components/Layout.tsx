@@ -51,6 +51,8 @@ export default function Layout() {
             <nav style={{ display: "flex", gap: 4 }}>
               <TopNavLink to="/" end label="Demo" />
               <TopNavLink to="/dashboard" label="Dashboard" />
+              <TopNavLink to="/onboarding" label="Get Started" />
+              <TopNavLink to="/pricing" label="Pricing" />
               <TopNavLink to="/how-it-works" label="How It Works" />
             </nav>
           </div>
