@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
-import { get } from "../api/client";
+import { get, setCurrentUser } from "../api/client";
 import type {
   PlanningCycle,
   BudgetEnvelope,
@@ -46,7 +47,27 @@ function groupByDivision(
   });
 }
 
+const VIEWS = [
+  { key: "executive", label: "Executive", role: "admin", path: "/dashboard" },
+  { key: "finance", label: "Finance", role: "finance", path: "/finance" },
+  { key: "hr", label: "HR", role: "hr", path: "/hr" },
+  { key: "business", label: "Business Owner", role: "business_owner", path: "/team" },
+  { key: "recruiting", label: "Recruiting", role: "ta", path: "/ta" },
+];
+
 export default function ExecutiveDashboard() {
+  const navigate = useNavigate();
+  const { data: users } = useApi<import("../api/types").User[]>("/users");
+
+  function switchView(view: typeof VIEWS[number]) {
+    if (view.key === "executive") return; // already here
+    const user = users?.find(u => u.role === view.role);
+    if (user) {
+      setCurrentUser({ id: user.id, role: user.role, name: user.name });
+      navigate(view.path);
+    }
+  }
+
   // Welcome banner dismissal
   const [showBanner, setShowBanner] = useState(
     () => localStorage.getItem("qwfp-dismiss-executive") !== "true",
@@ -243,12 +264,21 @@ export default function ExecutiveDashboard() {
         </div>
       )}
 
+      {/* View-as Toggle */}
+      <div className="view-toggle">
+        {VIEWS.map(v => (
+          <button key={v.key} className={v.key === "executive" ? "active" : ""} onClick={() => switchView(v)}>
+            {v.label}
+          </button>
+        ))}
+      </div>
+
       {/* Page Header */}
-      <div className="page-header" style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "32px", margin: "0 0 4px" }}>Hiring Command Center</h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "15px" }}>
+      <div className="page-header" style={{ marginBottom: "24px" }}>
+        <h1 style={{ fontSize: "28px", margin: "0 0 4px" }}>Hiring Command Center</h1>
+        <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
           FY26 Workforce Plan
-          {activeCycle && <> &mdash; {activeCycle.name}</>}
+          {activeCycle && <> — {activeCycle.name}</>}
         </p>
       </div>
 
