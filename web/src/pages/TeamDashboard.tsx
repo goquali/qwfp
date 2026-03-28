@@ -108,6 +108,7 @@ export default function TeamDashboard() {
     targetRoleTitle: "",
     targetLevel: "",
     desiredStartDate: "",
+    replaceSlotId: "",
   });
 
   // Toast state
@@ -180,6 +181,7 @@ export default function TeamDashboard() {
       targetRoleTitle: "",
       targetLevel: "",
       desiredStartDate: "",
+      replaceSlotId: "",
     });
     setFeasibility(null);
     setShowModal(true);
@@ -204,6 +206,7 @@ export default function TeamDashboard() {
       if (formData.targetRoleTitle) body.targetRoleTitle = formData.targetRoleTitle;
       if (formData.targetLevel) body.targetLevel = formData.targetLevel;
       if (formData.desiredStartDate) body.desiredStartDate = formData.desiredStartDate;
+      if (formData.replaceSlotId) body.replaceSlotId = formData.replaceSlotId;
 
       const result = await post<ChangeRequest>(
         `/team/my-teams/${selectedTeamId}/change-requests`,
@@ -382,6 +385,30 @@ export default function TeamDashboard() {
                       ))}
                     </select>
                   </div>
+
+                  {formData.requestType === "swap_role" && (
+                    <div>
+                      <label style={labelStyle}>Slot to Replace *</label>
+                      <select
+                        style={inputStyle}
+                        required
+                        value={formData.replaceSlotId}
+                        onChange={(e) => setFormData({ ...formData, replaceSlotId: e.target.value })}
+                      >
+                        <option value="">Select the position to swap out</option>
+                        {activeSlots
+                          .filter((s) => s.status !== "filled")
+                          .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.roleTitle} ({s.level || "—"}) — {s.totalComp ? `$${Math.round(parseFloat(s.totalComp) / 1000)}k` : "no comp"} — {s.status}
+                            </option>
+                          ))}
+                      </select>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                        Select the existing position you want to swap. The system will calculate the net budget impact.
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <label style={labelStyle}>Description *</label>
