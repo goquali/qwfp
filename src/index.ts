@@ -9,6 +9,7 @@ import teamRoutes from "./modules/team/routes.js";
 import reconciliationRoutes from "./modules/reconciliation/routes.js";
 import ingestionRoutes from "./modules/ingestion/routes.js";
 import taRoutes from "./modules/ta/routes.js";
+import billingRoutes from "./modules/billing/routes.js";
 
 const app = Fastify({
   logger: {
@@ -53,6 +54,7 @@ await app.register(teamRoutes, { prefix: "/api/v1/team" });
 await app.register(reconciliationRoutes, { prefix: "/api/v1/reconciliation" });
 await app.register(ingestionRoutes, { prefix: "/api/v1/import" });
 await app.register(taRoutes, { prefix: "/api/v1/ta" });
+await app.register(billingRoutes, { prefix: "/api/v1/billing" });
 
 // Start server
 try {

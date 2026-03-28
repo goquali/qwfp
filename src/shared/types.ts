@@ -178,6 +178,45 @@ export const MobilityEventType = {
 export type MobilityEventType =
   (typeof MobilityEventType)[keyof typeof MobilityEventType];
 
+export const SubscriptionTier = {
+  FREE: "free",
+  ESSENTIALS: "essentials",
+  PRO: "pro",
+  ENTERPRISE: "enterprise",
+} as const;
+export type SubscriptionTier =
+  (typeof SubscriptionTier)[keyof typeof SubscriptionTier];
+
+export const SubscriptionStatus = {
+  ACTIVE: "active",
+  CANCELLED: "cancelled",
+  PAST_DUE: "past_due",
+  TRIALING: "trialing",
+} as const;
+export type SubscriptionStatus =
+  (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
+
+export const AIAction = {
+  FEASIBILITY_CHECK: "feasibility_check",
+  COPILOT_QUERY: "copilot_query",
+  SCENARIO_RUN: "scenario_run",
+  AMENDMENT_DRAFT: "amendment_draft",
+  SMART_RECOMMENDATION: "smart_recommendation",
+  PREDICTIVE_ALERT: "predictive_alert",
+} as const;
+export type AIAction = (typeof AIAction)[keyof typeof AIAction];
+
+export const BillingEventType = {
+  SUBSCRIPTION_CREATED: "subscription_created",
+  TIER_UPGRADED: "tier_upgraded",
+  TIER_DOWNGRADED: "tier_downgraded",
+  CREDITS_PURCHASED: "credits_purchased",
+  CREDITS_RESET: "credits_reset",
+  PAYMENT_RECEIVED: "payment_received",
+} as const;
+export type BillingEventType =
+  (typeof BillingEventType)[keyof typeof BillingEventType];
+
 export const SnapshotType = {
   EVENT_TRIGGERED: "event_triggered",
   SCHEDULED_DAILY: "scheduled_daily",
