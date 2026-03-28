@@ -569,9 +569,34 @@ export default function HRDashboard() {
                       <div style={{ fontSize: "13px", color: "var(--text)", marginBottom: "4px" }}>
                         {cr.description}
                       </div>
-                      <div style={{ fontSize: "12px", color: "var(--text)" }}>
+                      <div style={{ fontSize: "12px", color: "var(--text)", marginBottom: "4px" }}>
                         {cr.targetRoleTitle && <>{cr.targetRoleTitle} {cr.targetLevel ? `(${cr.targetLevel})` : ""} &middot; </>}
                         {new Date(cr.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </div>
+                      {/* Budget Impact Analysis */}
+                      <div style={{
+                        background: cr.fitsEnvelope ? "#f0fdf4" : "#fefce8",
+                        border: `1px solid ${cr.fitsEnvelope ? "#bbf7d0" : "#fef08a"}`,
+                        borderRadius: "6px",
+                        padding: "8px 10px",
+                        marginBottom: "8px",
+                        fontSize: "12px",
+                      }}>
+                        <div style={{ fontWeight: 600, marginBottom: "4px", color: cr.fitsEnvelope ? "#166534" : "#854d0e" }}>
+                          {cr.fitsEnvelope ? "Within Budget" : "Exceeds Budget — Amendment Required"}
+                        </div>
+                        {cr.budgetImpact && (
+                          <div>Budget impact: <strong><MoneyDisplay amount={cr.budgetImpact} compact /></strong></div>
+                        )}
+                        {cr.suggestedOffset && (
+                          <div style={{ marginTop: "2px" }}>Suggested offset: {cr.suggestedOffset}</div>
+                        )}
+                        {cr.amendmentRequired && !cr.suggestedOffset && (
+                          <div style={{ marginTop: "2px", fontStyle: "italic" }}>Finance approval will be needed before HR can execute this change.</div>
+                        )}
+                        {cr.fitsEnvelope && (
+                          <div style={{ marginTop: "2px" }}>HR can execute immediately — no finance approval needed.</div>
+                        )}
                       </div>
                       {/* Approve / Reject buttons */}
                       <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
