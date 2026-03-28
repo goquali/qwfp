@@ -162,7 +162,7 @@ export default function HRDashboard() {
       (s) => !["draft", "filled", "cancelled"].includes(s.status),
     ).length;
 
-    const pendingCRs = changeRequests?.filter((cr) => cr.status === "pending").length ?? 0;
+    const pendingCRs = changeRequests?.filter((cr) => !["completed", "rejected"].includes(cr.status)).length ?? 0;
     const activeAlerts = alerts?.length ?? 0;
 
     let flexSum = 0;
@@ -508,14 +508,14 @@ export default function HRDashboard() {
                 Change Requests
                 {changeRequests && (
                   <span style={{ fontWeight: 400, color: "var(--text)", fontSize: "14px" }}>
-                    {" "}({changeRequests.filter((cr) => cr.status === "pending").length} pending)
+                    {" "}({changeRequests.filter((cr) => !["completed", "rejected"].includes(cr.status)).length} open)
                   </span>
                 )}
               </h2>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "16px" }}>
               {changeRequests
-                ?.filter((cr) => cr.status === "pending")
+                ?.filter((cr) => !["completed", "rejected"].includes(cr.status))
                 .map((cr) => (
                   <div
                     key={cr.id}
@@ -607,9 +607,9 @@ export default function HRDashboard() {
                     </div>
                   </div>
                 ))}
-              {(!changeRequests || changeRequests.filter((cr) => cr.status === "pending").length === 0) && (
+              {(!changeRequests || changeRequests.filter((cr) => !["completed", "rejected"].includes(cr.status)).length === 0) && (
                 <p style={{ textAlign: "center", color: "var(--text)", fontSize: "14px", padding: "16px 0" }}>
-                  No pending change requests
+                  No open change requests
                 </p>
               )}
             </div>
