@@ -124,12 +124,10 @@ export default function Pricing() {
 
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 8, margin: 0 }}>
-          <span style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            Simple, usage-based pricing
-          </span>
+        <h1 style={{ fontSize: 40, fontWeight: 500, letterSpacing: "-0.8px", margin: 0, color: "#1A1D1A" }}>
+          Simple, usage-based pricing
         </h1>
-        <p style={{ fontSize: 18, color: "#6b7280", maxWidth: 500, margin: "12px auto 0" }}>
+        <p style={{ fontSize: 18, color: "#616D61", maxWidth: 500, margin: "12px auto 0" }}>
           The platform is free. Pay only for AI features that save you hours.
         </p>
       </div>
@@ -139,33 +137,31 @@ export default function Pricing() {
         {TIERS.map((tier) => (
           <div key={tier.name} style={{
             background: "#fff",
-            border: tier.highlighted ? "2px solid var(--primary, #6366f1)" : "1px solid var(--border, #e5e7eb)",
-            borderRadius: 16,
+            border: tier.highlighted ? "2px solid #22A652" : "1px solid var(--border, #E4E7E4)",
+            borderRadius: 6,
             padding: 24,
             position: "relative",
-            boxShadow: tier.highlighted ? "0 8px 24px rgba(99,102,241,0.15)" : "0 1px 3px rgba(0,0,0,0.08)",
-            borderTop: tier.highlighted ? "4px solid transparent" : undefined,
-            borderImage: tier.highlighted ? "linear-gradient(135deg, #6366f1, #8b5cf6) 1" : undefined,
+            boxShadow: tier.highlighted ? "0 4px 12px rgba(26,29,26,0.08)" : "0 1px 3px rgba(26,29,26,0.06)",
           }}>
             {tier.highlighted && (
               <div style={{
                 position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff",
+                background: "#DEE7DE", color: "#1A1D1A",
                 padding: "3px 14px", borderRadius: 100, fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
               }}>
                 MOST POPULAR
               </div>
             )}
 
-            <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 500, marginBottom: 4 }}>{tier.description}</div>
+            <div style={{ fontSize: 13, color: "#616D61", fontWeight: 500, marginBottom: 4 }}>{tier.description}</div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>{tier.name}</div>
             <div style={{ marginBottom: 16 }}>
-              <span style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1 }}>{tier.price}</span>
-              {tier.period && <span style={{ fontSize: 14, color: "#6b7280" }}>{tier.period}</span>}
+              <span style={{ fontSize: 36, fontWeight: 500, letterSpacing: -1 }}>{tier.price}</span>
+              {tier.period && <span style={{ fontSize: 14, color: "#616D61" }}>{tier.period}</span>}
             </div>
             <div style={{
-              background: "rgba(99,102,241,0.08)", color: "#6366f1", padding: "6px 12px",
-              borderRadius: 8, fontSize: 13, fontWeight: 500, marginBottom: 20, textAlign: "center",
+              background: "#E8F8EE", color: "#22A652", padding: "6px 12px",
+              borderRadius: 4, fontSize: 13, fontWeight: 500, marginBottom: 20, textAlign: "center",
             }}>
               {tier.credits}
             </div>

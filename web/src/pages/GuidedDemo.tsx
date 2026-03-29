@@ -831,17 +831,17 @@ const pageWrapperStyle: React.CSSProperties = {
 const stepCardStyle: React.CSSProperties = {
   background: "var(--bg-card)",
   border: "1px solid var(--border)",
-  borderRadius: "16px",
+  borderRadius: "6px",
   padding: "32px",
-  boxShadow: "0 4px 6px rgba(0,0,0,0.07)",
+  boxShadow: "var(--shadow)",
 };
 
 const scenarioCardStyle: React.CSSProperties = {
   border: "1px solid var(--border)",
-  borderRadius: "12px",
+  borderRadius: "6px",
   padding: "24px",
   marginBottom: "24px",
-  background: "#fafafa",
+  background: "#F6F8F6",
 };
 
 const navBarStyle: React.CSSProperties = {
@@ -867,17 +867,17 @@ const heroBadgeStyle: React.CSSProperties = {
   alignItems: "center",
   gap: "4px",
   padding: "8px 18px",
-  borderRadius: "20px",
+  borderRadius: "4px",
   fontSize: "15px",
   fontWeight: 600,
-  backgroundColor: "var(--primary-light)",
-  color: "var(--primary)",
+  backgroundColor: "#DEE7DE",
+  color: "#1A1D1A",
 };
 
 const metricCardStyle: React.CSSProperties = {
   background: "var(--bg-card)",
   border: "1px solid var(--border)",
-  borderRadius: "12px",
+  borderRadius: "6px",
   padding: "20px",
   textAlign: "center",
 };
@@ -891,8 +891,9 @@ const metricLabelStyle: React.CSSProperties = {
 };
 
 const metricValueStyle: React.CSSProperties = {
-  fontSize: "32px",
-  fontWeight: 700,
+  fontSize: "48px",
+  fontWeight: 500,
+  letterSpacing: "-1px",
   lineHeight: 1.2,
 };
 
