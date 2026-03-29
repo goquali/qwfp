@@ -386,7 +386,7 @@ export default function AICopilot({
                   lineHeight: 1.5,
                   ...(msg.role === "user"
                     ? {
-                        background: "#6366f1",
+                        background: "#232A23",
                         color: "white",
                         borderBottomRightRadius: 4,
                       }
@@ -437,8 +437,8 @@ export default function AICopilot({
           disabled={thinking}
           style={{
             flex: 1,
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
+            border: "1px solid #E4E7E4",
+            borderRadius: 4,
             padding: "10px 14px",
             fontSize: 14,
             outline: "none",
@@ -448,7 +448,7 @@ export default function AICopilot({
           onClick={handleSend}
           disabled={thinking || !input.trim()}
           style={{
-            background: input.trim() && !thinking ? "#6366f1" : "#d1d5db",
+            background: input.trim() && !thinking ? "#232A23" : "#E4E7E4",
             color: "white",
             border: "none",
             borderRadius: 8,

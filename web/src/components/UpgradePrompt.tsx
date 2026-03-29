@@ -10,9 +10,9 @@ export default function UpgradePrompt({ feature, description, creditsRemaining }
   const navigate = useNavigate();
   return (
     <div style={{
-      background: "linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)",
-      border: "1px solid #c7d2fe",
-      borderRadius: 12,
+      background: "#DEE7DE",
+      border: "1px solid #E4E7E4",
+      borderRadius: 6,
       padding: "20px 24px",
       textAlign: "center",
       maxWidth: 400,
@@ -22,15 +22,15 @@ export default function UpgradePrompt({ feature, description, creditsRemaining }
       <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{feature}</div>
       <div style={{ fontSize: 13, color: "#5e6278", marginBottom: 12, lineHeight: 1.5 }}>{description}</div>
       {creditsRemaining !== undefined && (
-        <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: "#22A652", marginBottom: 12 }}>
           {creditsRemaining} credits remaining
         </div>
       )}
       <button
         onClick={() => navigate("/pricing")}
         style={{
-          padding: "8px 20px", borderRadius: 8, border: "none",
-          background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+          padding: "8px 20px", borderRadius: 4, border: "none",
+          background: "#232A23",
           color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer",
         }}
       >
