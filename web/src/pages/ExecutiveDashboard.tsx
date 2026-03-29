@@ -20,7 +20,7 @@ const PIPELINE_STATUSES = ["draft", "open", "sourcing", "offer", "filled", "canc
 const PIPELINE_COLORS: Record<string, string> = {
   draft: "#9ca3af",
   open: "#3b82f6",
-  sourcing: "#6366f1",
+  sourcing: "#1B8A43",
   offer: "#f59e0b",
   filled: "#22c55e",
   cancelled: "#ef4444",
@@ -328,7 +328,7 @@ export default function ExecutiveDashboard() {
           {/* Pipeline */}
           <div className="stat-card card" style={{
             ...statCardStyle,
-            borderLeft: "4px solid #6366f1",
+            borderLeft: "4px solid #22A652",
           }}>
             <div className="stat-label" style={statLabelStyle}>Pipeline</div>
             <div className="stat-value" style={statValueStyle}>

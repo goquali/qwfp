@@ -42,8 +42,8 @@ const TIER_ORDER: Record<string, number> = {
 const TIER_COLORS: Record<string, { bg: string; color: string; bar: string }> = {
   free: { bg: "#f3f4f6", color: "#374151", bar: "#9ca3af" },
   essentials: { bg: "#dbeafe", color: "#1e40af", bar: "#3b82f6" },
-  pro: { bg: "#e0e7ff", color: "#3730a3", bar: "#6366f1" },
-  enterprise: { bg: "#f3e8ff", color: "#6b21a8", bar: "#8b5cf6" },
+  pro: { bg: "#DEE7DE", color: "#1A1D1A", bar: "#22A652" },
+  enterprise: { bg: "#E8F8EE", color: "#1A1D1A", bar: "#1B8A43" },
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -121,9 +121,7 @@ export default function AdminDashboard() {
       {/* Page Header */}
       <div className="page-header">
         <h1 style={{
-          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
+          color: "#1A1D1A",
         }}>
           Admin Dashboard
         </h1>
@@ -291,7 +289,7 @@ export default function AdminDashboard() {
                       width: `${Math.max(widthPct, count > 0 ? 3 : 0)}%`,
                       background: isFree
                         ? "linear-gradient(90deg, #22c55e, #16a34a)"
-                        : "linear-gradient(90deg, #6366f1, #8b5cf6)",
+                        : "#22A652",
                       borderRadius: 4,
                       transition: "width 0.3s ease",
                     }} />
