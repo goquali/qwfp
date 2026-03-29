@@ -805,9 +805,9 @@ export default function GuidedDemo() {
     return (
       <div
         style={{
-          background: "linear-gradient(135deg, #eef2ff, #f5f3ff)",
-          borderLeft: "3px solid var(--primary)",
-          borderRadius: "8px",
+          background: "#F6F8F6",
+          borderLeft: "3px solid #22A652",
+          borderRadius: "6px",
           padding: "16px 20px",
           fontSize: "14px",
           lineHeight: 1.7,
