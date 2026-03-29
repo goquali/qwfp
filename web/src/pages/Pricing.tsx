@@ -168,8 +168,8 @@ export default function Pricing() {
 
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px", display: "flex", flexDirection: "column", gap: 8 }}>
               {tier.features.map((f) => (
-                <li key={f} style={{ fontSize: 13, color: "#6b7280", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#10b981", fontSize: 14 }}>✓</span> {f}
+                <li key={f} style={{ fontSize: 13, color: "#616D61", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#22A652", fontSize: 14 }}>✓</span> {f}
                 </li>
               ))}
             </ul>
@@ -181,21 +181,21 @@ export default function Pricing() {
                 width: "100%",
                 justifyContent: "center",
                 padding: "10px 0",
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 500,
-                borderRadius: 8,
+                borderRadius: 4,
                 cursor: tier.disabled ? "default" : "pointer",
-                border: tier.ctaStyle === "primary" ? "none" : "1px solid var(--border, #e5e7eb)",
+                border: tier.ctaStyle === "primary" ? "none" : "1px solid #E4E7E4",
                 background: tier.disabled
-                  ? "#f0f1f3"
+                  ? "#EFF2EF"
                   : tier.ctaStyle === "primary"
-                  ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
+                  ? "#232A23"
                   : "#fff",
                 color: tier.disabled
-                  ? "#9ca3af"
+                  ? "#929C92"
                   : tier.ctaStyle === "primary"
                   ? "#fff"
-                  : "#374151",
+                  : "#1A1D1A",
                 opacity: upgrading === tier.tier ? 0.6 : 1,
                 fontFamily: "inherit",
               }}
