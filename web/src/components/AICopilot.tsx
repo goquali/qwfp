@@ -350,7 +350,7 @@ export default function AICopilot({
             border: "none",
             fontSize: 18,
             cursor: "pointer",
-            color: "#6b7280",
+            color: "#929C92",
             padding: 4,
             lineHeight: 1,
           }}
@@ -415,7 +415,7 @@ export default function AICopilot({
                 padding: "10px 14px",
                 borderRadius: 12,
                 background: "#f4f5f7",
-                color: "#6b7280",
+                color: "#929C92",
                 fontSize: 14,
                 borderBottomLeftRadius: 4,
               }}
@@ -467,7 +467,7 @@ export default function AICopilot({
         <div style={{
           padding: "6px 16px",
           fontSize: 11,
-          color: creditsRemaining <= 5 ? "#dc2626" : "#6b7280",
+          color: creditsRemaining <= 5 ? "#A62222" : "#929C92",
           textAlign: "center",
           borderTop: "1px solid #f0f1f3",
         }}>

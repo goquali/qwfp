@@ -116,7 +116,7 @@ export default function Pricing() {
           position: "fixed", top: 20, right: 20, zIndex: 1100,
           padding: "12px 20px", borderRadius: 8, fontSize: 14, fontWeight: 500,
           boxShadow: "0 4px 12px rgba(0,0,0,0.15)", color: "white",
-          backgroundColor: toast.type === "success" ? "#10b981" : "#ef4444",
+          backgroundColor: toast.type === "success" ? "#22A652" : "#A62222",
         }}>
           {toast.message}
         </div>
@@ -209,29 +209,29 @@ export default function Pricing() {
       {/* Credit Table */}
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>What counts as an AI credit?</h2>
-        <p style={{ textAlign: "center", color: "#6b7280", marginBottom: 24, fontSize: 14 }}>
+        <p style={{ textAlign: "center", color: "#929C92", marginBottom: 24, fontSize: 14 }}>
           Each AI-powered action consumes credits. Predictive alerts are always free.
         </p>
 
-        <div style={{ background: "#fff", border: "1px solid var(--border, #e5e7eb)", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ background: "#fff", border: "1px solid #E4E7E4", borderRadius: 6, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr>
-                <th style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280" }}>Action</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280" }}>Description</th>
-                <th style={{ textAlign: "center", padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280" }}>Credits</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid #E4E7E4", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#929C92" }}>Action</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid #E4E7E4", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#929C92" }}>Description</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", borderBottom: "1px solid #E4E7E4", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#929C92" }}>Credits</th>
               </tr>
             </thead>
             <tbody>
               {CREDIT_TABLE.map((row) => (
                 <tr key={row.action}>
-                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", fontWeight: 500 }}>{row.action}</td>
-                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", color: "#6b7280" }}>{row.description}</td>
-                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", textAlign: "center" }}>
+                  <td style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7E4", fontWeight: 500 }}>{row.action}</td>
+                  <td style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7E4", color: "#616D61" }}>{row.description}</td>
+                  <td style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7E4", textAlign: "center" }}>
                     {row.credits === 0 ? (
-                      <span style={{ color: "#10b981", fontWeight: 600 }}>Free</span>
+                      <span style={{ color: "#22A652", fontWeight: 600 }}>Free</span>
                     ) : (
-                      <span style={{ background: "rgba(99,102,241,0.08)", color: "#6366f1", padding: "2px 10px", borderRadius: 100, fontWeight: 600, fontSize: 13 }}>{row.credits}</span>
+                      <span style={{ background: "#E8F8EE", color: "#22A652", padding: "2px 10px", borderRadius: 100, fontWeight: 600, fontSize: 13 }}>{row.credits}</span>
                     )}
                   </td>
                 </tr>
