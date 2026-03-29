@@ -99,13 +99,13 @@ function TopNavLink({ to, label, end }: { to: string; label: string; end?: boole
       end={end}
       style={({ isActive }) => ({
         padding: "6px 14px",
-        borderRadius: 8,
+        borderRadius: 4,
         fontSize: 14,
         fontWeight: isActive ? 600 : 500,
         textDecoration: "none",
-        color: isActive ? "var(--accent)" : "var(--text-secondary)",
-        background: "transparent",
-        borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent",
+        color: isActive ? "#22A652" : "var(--text-secondary)",
+        background: isActive ? "rgba(34,166,82,0.08)" : "transparent",
+        borderBottom: "2px solid transparent",
         transition: "all 0.2s",
       })}
     >

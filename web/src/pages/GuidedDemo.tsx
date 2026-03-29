@@ -27,11 +27,11 @@ interface DemoData {
 const TOTAL_STEPS = 7; // 0=hero, 1-5=steps, 6=CTA
 
 const PIPELINE_COLORS: Record<string, string> = {
-  draft: "#9ca3af",
-  open: "#3b82f6",
-  sourcing: "#6366f1",
-  offer: "#f59e0b",
-  filled: "#22c55e",
+  draft: "#929C92",
+  open: "#22A652",
+  sourcing: "#1B8A43",
+  offer: "#A6A022",
+  filled: "#22A652",
 };
 
 const PIPELINE_LABELS: Record<string, string> = {
@@ -45,11 +45,11 @@ const PIPELINE_LABELS: Record<string, string> = {
 const PIPELINE_ORDER = ["draft", "open", "sourcing", "offer", "filled"];
 
 const BUDGET_BAR_COLORS = [
-  "linear-gradient(90deg, #6366f1, #818cf8)",
-  "linear-gradient(90deg, #059669, #34d399)",
-  "linear-gradient(90deg, #d97706, #fbbf24)",
-  "linear-gradient(90deg, #dc2626, #f87171)",
-  "linear-gradient(90deg, #7c3aed, #a78bfa)",
+  "#22A652",
+  "#1B8A43",
+  "#A6A022",
+  "#A62222",
+  "#232A23",
 ];
 
 export default function GuidedDemo() {
@@ -288,12 +288,10 @@ export default function GuidedDemo() {
         <div className="page-header">
           <h1
             style={{
-              fontSize: "42px",
-              fontWeight: 700,
-              letterSpacing: "-1px",
-              background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              fontSize: "40px",
+              fontWeight: 500,
+              letterSpacing: "-0.8px",
+              color: "var(--text)",
               marginBottom: "16px",
             }}
           >
@@ -331,10 +329,12 @@ export default function GuidedDemo() {
           onClick={goNext}
           className="btn btn-primary"
           style={{
-            fontSize: "16px",
+            fontSize: "14px",
             padding: "14px 32px",
-            borderRadius: "10px",
-            fontWeight: 600,
+            borderRadius: "4px",
+            fontWeight: 500,
+            background: "#232A23",
+            color: "white",
           }}
         >
           Start the Tour &rarr;
@@ -728,10 +728,12 @@ export default function GuidedDemo() {
           <button
             className="btn btn-primary"
             style={{
-              fontSize: "16px",
+              fontSize: "14px",
               padding: "14px 28px",
-              borderRadius: "10px",
-              fontWeight: 600,
+              borderRadius: "4px",
+              fontWeight: 500,
+              background: "#232A23",
+              color: "white",
             }}
             onClick={() => navigate("/dashboard")}
           >
@@ -740,11 +742,11 @@ export default function GuidedDemo() {
           <button
             className="btn"
             style={{
-              fontSize: "16px",
+              fontSize: "14px",
               padding: "14px 28px",
-              borderRadius: "10px",
-              fontWeight: 600,
-              border: "1px solid var(--border)",
+              borderRadius: "4px",
+              fontWeight: 500,
+              border: "1px solid #E4E7E4",
               backgroundColor: "transparent",
               color: "var(--text)",
               cursor: "pointer",
@@ -771,7 +773,7 @@ export default function GuidedDemo() {
               width: "32px",
               height: "32px",
               borderRadius: "50%",
-              backgroundColor: "var(--primary)",
+              backgroundColor: "#232A23",
               color: "white",
               fontSize: "14px",
               fontWeight: 700,
