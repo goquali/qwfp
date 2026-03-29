@@ -110,7 +110,7 @@ export default function HowItWorks() {
           <RoleCard
             emoji="💰"
             title="Finance"
-            color="#4f46e5"
+            color="#22A652"
             items={[
               "Sets team budgets (headcount + dollars)",
               "Defines salary ranges per team",
