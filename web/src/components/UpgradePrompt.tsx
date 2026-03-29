@@ -8,42 +8,34 @@ interface UpgradePromptProps {
 
 export default function UpgradePrompt({ feature, description, creditsRemaining }: UpgradePromptProps) {
   const navigate = useNavigate();
-
   return (
     <div style={{
       background: "linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)",
-      border: "1px solid #e0e7ff",
+      border: "1px solid #c7d2fe",
       borderRadius: 12,
-      padding: 20,
+      padding: "20px 24px",
       textAlign: "center",
       maxWidth: 400,
       margin: "16px auto",
     }}>
       <div style={{ fontSize: 24, marginBottom: 8 }}>✨</div>
-      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{feature}</div>
-      <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.6 }}>
-        {description}
-      </div>
+      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{feature}</div>
+      <div style={{ fontSize: 13, color: "#5e6278", marginBottom: 12, lineHeight: 1.5 }}>{description}</div>
       {creditsRemaining !== undefined && (
-        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
-          {creditsRemaining} credits remaining this month
+        <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 12 }}>
+          {creditsRemaining} credits remaining
         </div>
       )}
       <button
-        className="btn btn-primary"
         onClick={() => navigate("/pricing")}
-        style={{ fontSize: 13, padding: "8px 20px" }}
+        style={{
+          padding: "8px 20px", borderRadius: 8, border: "none",
+          background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+          color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer",
+        }}
       >
         Upgrade to Pro
       </button>
-      <div style={{ marginTop: 8 }}>
-        <a
-          onClick={() => navigate("/pricing")}
-          style={{ fontSize: 12, color: "var(--primary)", cursor: "pointer", textDecoration: "none" }}
-        >
-          View all plans →
-        </a>
-      </div>
     </div>
   );
 }

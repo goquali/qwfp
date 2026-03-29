@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { get } from "../api/client";
+import { get, post } from "../api/client";
+import UpgradePrompt from "./UpgradePrompt";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  isUpgradePrompt?: boolean;
 }
 
 function renderContent(content: string) {
@@ -24,6 +26,20 @@ function renderContent(content: string) {
 }
 
 async function processQuestion(question: string): Promise<string> {
+  // Try to consume a credit
+  try {
+    const creditCheck = await post("/billing/usage/consume", { action: "copilot_query" });
+    if (creditCheck && !creditCheck.allowed) {
+      return `**AI Credits Exhausted**\n\nYou've used all your free AI credits this month. Upgrade to Pro for 5,000 credits/month.\n\n→ Visit /pricing to upgrade`;
+    }
+  } catch (err: any) {
+    // If 402, credits exhausted
+    if (err?.error === "AI_CREDITS_EXHAUSTED") {
+      return `**AI Credits Exhausted**\n\nYou've used all your free AI credits. Upgrade to Pro for unlimited AI features.\n\n→ Visit /pricing to upgrade`;
+    }
+    // Otherwise continue — billing might not be set up
+  }
+
   const q = question.toLowerCase();
 
   if (
@@ -239,11 +255,28 @@ export default function AICopilot({
   ]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Fetch credit usage on mount and when panel opens
+  useEffect(() => {
+    if (!open) return;
+    get("/billing/usage")
+      .then((usage: any) => {
+        if (usage && typeof usage.creditsRemaining === "number") {
+          setCreditsRemaining(usage.creditsRemaining);
+        } else if (usage && typeof usage.creditsUsed === "number" && typeof usage.creditsLimit === "number") {
+          setCreditsRemaining(usage.creditsLimit - usage.creditsUsed);
+        }
+      })
+      .catch(() => {
+        // Billing not set up — ignore
+      });
+  }, [open]);
 
   if (!open) return null;
 
@@ -259,10 +292,30 @@ export default function AICopilot({
 
     try {
       const response = await processQuestion(userMsg);
+
+      // Check if response indicates credits exhausted — show upgrade prompt inline
+      const isExhausted = response.includes("AI Credits Exhausted");
+
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: response, timestamp: new Date() },
+        {
+          role: "assistant",
+          content: response,
+          timestamp: new Date(),
+          isUpgradePrompt: isExhausted,
+        },
       ]);
+
+      // Refresh credit count after a query
+      get("/billing/usage")
+        .then((usage: any) => {
+          if (usage && typeof usage.creditsRemaining === "number") {
+            setCreditsRemaining(usage.creditsRemaining);
+          } else if (usage && typeof usage.creditsUsed === "number" && typeof usage.creditsLimit === "number") {
+            setCreditsRemaining(usage.creditsLimit - usage.creditsUsed);
+          }
+        })
+        .catch(() => {});
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -317,28 +370,36 @@ export default function AICopilot({
               marginBottom: 12,
             }}
           >
-            <div
-              style={{
-                maxWidth: "85%",
-                padding: "10px 14px",
-                borderRadius: 12,
-                fontSize: 14,
-                lineHeight: 1.5,
-                ...(msg.role === "user"
-                  ? {
-                      background: "#6366f1",
-                      color: "white",
-                      borderBottomRightRadius: 4,
-                    }
-                  : {
-                      background: "#f4f5f7",
-                      color: "#1a1d23",
-                      borderBottomLeftRadius: 4,
-                    }),
-              }}
-            >
-              {renderContent(msg.content)}
-            </div>
+            {msg.isUpgradePrompt ? (
+              <UpgradePrompt
+                feature="AI Credits Exhausted"
+                description="You've used all your free AI credits this month. Upgrade to Pro for 5,000 credits/month."
+                creditsRemaining={0}
+              />
+            ) : (
+              <div
+                style={{
+                  maxWidth: "85%",
+                  padding: "10px 14px",
+                  borderRadius: 12,
+                  fontSize: 14,
+                  lineHeight: 1.5,
+                  ...(msg.role === "user"
+                    ? {
+                        background: "#6366f1",
+                        color: "white",
+                        borderBottomRightRadius: 4,
+                      }
+                    : {
+                        background: "#f4f5f7",
+                        color: "#1a1d23",
+                        borderBottomLeftRadius: 4,
+                      }),
+                }}
+              >
+                {renderContent(msg.content)}
+              </div>
+            )}
           </div>
         ))}
         {thinking && (
@@ -400,6 +461,19 @@ export default function AICopilot({
           Send
         </button>
       </div>
+
+      {/* Credit counter */}
+      {creditsRemaining !== null && (
+        <div style={{
+          padding: "6px 16px",
+          fontSize: 11,
+          color: creditsRemaining <= 5 ? "#dc2626" : "#6b7280",
+          textAlign: "center",
+          borderTop: "1px solid #f0f1f3",
+        }}>
+          {creditsRemaining} AI credit{creditsRemaining !== 1 ? "s" : ""} remaining
+        </div>
+      )}
     </div>
   );
 }
