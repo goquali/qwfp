@@ -137,3 +137,33 @@ export interface CapacitySnapshot {
   utilizationPct: number;
   capacityGap: number;
 }
+
+// Billing types
+export interface BillingUsage {
+  creditsUsed: number;
+  creditsLimit: number;
+  creditsRemaining: number;
+  tier: string;
+  periodStart: string;
+  periodEnd: string;
+}
+
+export interface CreditConsumeRequest {
+  action: string;
+}
+
+export interface CreditConsumeResponse {
+  allowed: boolean;
+  creditsRemaining: number;
+  creditsCost: number;
+}
+
+export interface CheckoutRequest {
+  tier: string;
+}
+
+export interface CheckoutResponse {
+  url?: string;
+  demo?: boolean;
+  tier?: string;
+}

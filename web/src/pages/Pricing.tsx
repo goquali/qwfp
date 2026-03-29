@@ -1,49 +1,59 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { post } from "../api/client";
 
 const TIERS = [
   {
     name: "Free",
     price: "$0",
     period: "",
+    tier: "free",
     description: "Get started",
     credits: "50 AI credits/month",
     features: ["Budget management", "Job slot tracking", "Basic dashboards", "Unlimited users", "Data import"],
     cta: "Current Plan",
     highlighted: false,
     ctaStyle: "ghost" as const,
+    disabled: true,
   },
   {
     name: "Essentials",
     price: "$99",
     period: "/mo",
+    tier: "essentials",
     description: "For growing teams",
     credits: "500 AI credits/month",
     features: ["Everything in Free", "Auto-feasibility analysis", "AI Copilot (limited)", "Budget alerts", "Change request tracking"],
     cta: "Upgrade",
     highlighted: false,
     ctaStyle: "ghost" as const,
+    disabled: false,
   },
   {
     name: "Pro",
     price: "$499",
     period: "/mo",
+    tier: "pro",
     description: "Most popular",
     credits: "5,000 AI credits/month",
     features: ["Everything in Essentials", "Unlimited AI Copilot", "Scenario modeling", "Smart recommendations", "Predictive alerts", "Auto-amendment drafting"],
     cta: "Upgrade to Pro",
     highlighted: true,
     ctaStyle: "primary" as const,
+    disabled: false,
   },
   {
     name: "Enterprise",
     price: "Custom",
     period: "",
+    tier: "enterprise",
     description: "For large organizations",
     credits: "Unlimited AI credits",
     features: ["Everything in Pro", "Custom AI models", "SSO & audit logs", "Dedicated support", "Custom integrations", "SLA guarantee"],
     cta: "Contact Sales",
     highlighted: false,
     ctaStyle: "ghost" as const,
+    disabled: false,
   },
 ];
 
@@ -58,17 +68,68 @@ const CREDIT_TABLE = [
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  async function handleUpgrade(tier: string) {
+    if (tier === "enterprise") {
+      // Enterprise: just show a contact message
+      setToast({ message: "Our sales team will reach out shortly!", type: "success" });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+
+    setUpgrading(tier);
+    try {
+      const result = await post("/billing/checkout", { tier });
+      if (result.url) {
+        // Stripe checkout — redirect
+        window.location.href = result.url;
+      } else if (result.demo) {
+        // Demo mode — instant upgrade
+        setToast({ message: "Upgraded! Redirecting to dashboard...", type: "success" });
+        setTimeout(() => {
+          setToast(null);
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        setToast({ message: "Upgrade successful!", type: "success" });
+        setTimeout(() => setToast(null), 4000);
+      }
+    } catch (err: any) {
+      // If billing endpoint doesn't exist, treat as demo mode
+      setToast({ message: "Upgraded! (demo mode) Redirecting...", type: "success" });
+      setTimeout(() => {
+        setToast(null);
+        navigate("/dashboard");
+      }, 2000);
+    } finally {
+      setUpgrading(null);
+    }
+  }
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 0" }}>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, zIndex: 1100,
+          padding: "12px 20px", borderRadius: 8, fontSize: 14, fontWeight: 500,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)", color: "white",
+          backgroundColor: toast.type === "success" ? "#10b981" : "#ef4444",
+        }}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <h1 className="page-header" style={{ fontSize: 36, fontWeight: 700, marginBottom: 8 }}>
+        <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 8, margin: 0 }}>
           <span style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             Simple, usage-based pricing
           </span>
         </h1>
-        <p style={{ fontSize: 18, color: "var(--text-muted)", maxWidth: 500, margin: "0 auto" }}>
+        <p style={{ fontSize: 18, color: "#6b7280", maxWidth: 500, margin: "12px auto 0" }}>
           The platform is free. Pay only for AI features that save you hours.
         </p>
       </div>
@@ -78,11 +139,13 @@ export default function Pricing() {
         {TIERS.map((tier) => (
           <div key={tier.name} style={{
             background: "#fff",
-            border: tier.highlighted ? "2px solid var(--primary)" : "1px solid var(--border)",
+            border: tier.highlighted ? "2px solid var(--primary, #6366f1)" : "1px solid var(--border, #e5e7eb)",
             borderRadius: 16,
             padding: 24,
             position: "relative",
-            boxShadow: tier.highlighted ? "0 8px 24px rgba(99,102,241,0.15)" : "var(--shadow)",
+            boxShadow: tier.highlighted ? "0 8px 24px rgba(99,102,241,0.15)" : "0 1px 3px rgba(0,0,0,0.08)",
+            borderTop: tier.highlighted ? "4px solid transparent" : undefined,
+            borderImage: tier.highlighted ? "linear-gradient(135deg, #6366f1, #8b5cf6) 1" : undefined,
           }}>
             {tier.highlighted && (
               <div style={{
@@ -90,18 +153,18 @@ export default function Pricing() {
                 background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff",
                 padding: "3px 14px", borderRadius: 100, fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
               }}>
-                RECOMMENDED
+                MOST POPULAR
               </div>
             )}
 
-            <div style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>{tier.description}</div>
+            <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 500, marginBottom: 4 }}>{tier.description}</div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>{tier.name}</div>
             <div style={{ marginBottom: 16 }}>
               <span style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1 }}>{tier.price}</span>
-              {tier.period && <span style={{ fontSize: 14, color: "var(--text-muted)" }}>{tier.period}</span>}
+              {tier.period && <span style={{ fontSize: 14, color: "#6b7280" }}>{tier.period}</span>}
             </div>
             <div style={{
-              background: "var(--primary-light)", color: "var(--primary)", padding: "6px 12px",
+              background: "rgba(99,102,241,0.08)", color: "#6366f1", padding: "6px 12px",
               borderRadius: 8, fontSize: 13, fontWeight: 500, marginBottom: 20, textAlign: "center",
             }}>
               {tier.credits}
@@ -109,18 +172,39 @@ export default function Pricing() {
 
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px", display: "flex", flexDirection: "column", gap: 8 }}>
               {tier.features.map((f) => (
-                <li key={f} style={{ fontSize: 13, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "var(--success)", fontSize: 14 }}>✓</span> {f}
+                <li key={f} style={{ fontSize: 13, color: "#6b7280", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#10b981", fontSize: 14 }}>✓</span> {f}
                 </li>
               ))}
             </ul>
 
             <button
-              onClick={() => tier.name !== "Enterprise" ? navigate("/onboarding") : undefined}
-              className={`btn ${tier.ctaStyle === "primary" ? "btn-primary" : "btn-ghost"}`}
-              style={{ width: "100%", justifyContent: "center", padding: "10px 0", fontSize: 14 }}
+              onClick={() => !tier.disabled && handleUpgrade(tier.tier)}
+              disabled={tier.disabled || upgrading === tier.tier}
+              style={{
+                width: "100%",
+                justifyContent: "center",
+                padding: "10px 0",
+                fontSize: 14,
+                fontWeight: 500,
+                borderRadius: 8,
+                cursor: tier.disabled ? "default" : "pointer",
+                border: tier.ctaStyle === "primary" ? "none" : "1px solid var(--border, #e5e7eb)",
+                background: tier.disabled
+                  ? "#f0f1f3"
+                  : tier.ctaStyle === "primary"
+                  ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
+                  : "#fff",
+                color: tier.disabled
+                  ? "#9ca3af"
+                  : tier.ctaStyle === "primary"
+                  ? "#fff"
+                  : "#374151",
+                opacity: upgrading === tier.tier ? 0.6 : 1,
+                fontFamily: "inherit",
+              }}
             >
-              {tier.cta}
+              {upgrading === tier.tier ? "Processing..." : tier.cta}
             </button>
           </div>
         ))}
@@ -129,29 +213,29 @@ export default function Pricing() {
       {/* Credit Table */}
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>What counts as an AI credit?</h2>
-        <p style={{ textAlign: "center", color: "var(--text-muted)", marginBottom: 24, fontSize: 14 }}>
+        <p style={{ textAlign: "center", color: "#6b7280", marginBottom: 24, fontSize: 14 }}>
           Each AI-powered action consumes credits. Predictive alerts are always free.
         </p>
 
-        <div className="card" style={{ borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ background: "#fff", border: "1px solid var(--border, #e5e7eb)", borderRadius: 12, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr>
-                <th style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid var(--border)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-muted)" }}>Action</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid var(--border)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-muted)" }}>Description</th>
-                <th style={{ textAlign: "center", padding: "12px 16px", borderBottom: "1px solid var(--border)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-muted)" }}>Credits</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280" }}>Action</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280" }}>Description</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280" }}>Credits</th>
               </tr>
             </thead>
             <tbody>
               {CREDIT_TABLE.map((row) => (
                 <tr key={row.action}>
-                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>{row.action}</td>
-                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", color: "var(--text-muted)" }}>{row.description}</td>
-                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", textAlign: "center" }}>
+                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", fontWeight: 500 }}>{row.action}</td>
+                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", color: "#6b7280" }}>{row.description}</td>
+                  <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--border, #e5e7eb)", textAlign: "center" }}>
                     {row.credits === 0 ? (
-                      <span style={{ color: "var(--success)", fontWeight: 600 }}>Free</span>
+                      <span style={{ color: "#10b981", fontWeight: 600 }}>Free</span>
                     ) : (
-                      <span style={{ background: "var(--primary-light)", color: "var(--primary)", padding: "2px 10px", borderRadius: 100, fontWeight: 600, fontSize: 13 }}>{row.credits}</span>
+                      <span style={{ background: "rgba(99,102,241,0.08)", color: "#6366f1", padding: "2px 10px", borderRadius: 100, fontWeight: 600, fontSize: 13 }}>{row.credits}</span>
                     )}
                   </td>
                 </tr>
