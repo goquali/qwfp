@@ -8,14 +8,14 @@ export default function MoneyDisplay({ amount, currency = "USD", compact = false
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
 
   if (isNaN(num)) {
-    return <span className="money">--</span>;
+    return <span className="money" style={{ fontFamily: "var(--font-body)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.3px" }}>--</span>;
   }
 
   const formatted = compact
     ? formatCompact(num, currency)
     : num.toLocaleString("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-  return <span className="money">{formatted}</span>;
+  return <span className="money" style={{ fontFamily: "var(--font-body)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.3px" }}>{formatted}</span>;
 }
 
 function formatCompact(num: number, currency: string): string {

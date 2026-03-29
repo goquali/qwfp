@@ -28,23 +28,22 @@ export default function Layout() {
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 32px",
-          height: 56,
-          borderBottom: "1px solid var(--border)",
+          height: 52,
           background: "#fff",
           position: "sticky",
           top: 0,
           zIndex: 50,
+          boxShadow: "0 1px 0 var(--border)",
         }}>
           {/* Left: Brand + Nav */}
           <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
             <NavLink to="/" style={{ textDecoration: "none" }}>
               <span style={{
-                fontSize: 20,
+                fontSize: 24,
+                fontFamily: "var(--font-body)",
                 fontWeight: 700,
+                color: "#1A1D1A",
                 letterSpacing: -0.5,
-                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
               }}>QWFP</span>
             </NavLink>
 
@@ -67,15 +66,15 @@ export default function Layout() {
               alignItems: "center",
               gap: 6,
               padding: "6px 14px",
-              borderRadius: 8,
-              border: "1px solid var(--border)",
-              background: copilotOpen ? "var(--primary)" : "#fff",
-              color: copilotOpen ? "#fff" : "var(--text-secondary, #5e6278)",
+              borderRadius: 4,
+              border: "1px solid #E4E7E4",
+              background: copilotOpen ? "#232A23" : "transparent",
+              color: copilotOpen ? "#fff" : "#616D61",
               cursor: "pointer",
               fontSize: 13,
               fontWeight: 500,
-              fontFamily: "inherit",
-              transition: "all 0.15s",
+              fontFamily: "var(--font-body)",
+              transition: "all 0.2s",
             }}
           >
             <span>✨</span> Ask AI
@@ -102,11 +101,12 @@ function TopNavLink({ to, label, end }: { to: string; label: string; end?: boole
         padding: "6px 14px",
         borderRadius: 8,
         fontSize: 14,
-        fontWeight: 500,
+        fontWeight: isActive ? 600 : 500,
         textDecoration: "none",
-        color: isActive ? "var(--primary, #6366f1)" : "var(--text-secondary, #5e6278)",
-        background: isActive ? "rgba(99, 102, 241, 0.08)" : "transparent",
-        transition: "all 0.15s",
+        color: isActive ? "var(--accent)" : "var(--text-secondary)",
+        background: "transparent",
+        borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent",
+        transition: "all 0.2s",
       })}
     >
       {label}
