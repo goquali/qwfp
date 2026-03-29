@@ -54,6 +54,7 @@ export default function Layout() {
               <TopNavLink to="/onboarding" label="Get Started" />
               <TopNavLink to="/pricing" label="Pricing" />
               <TopNavLink to="/how-it-works" label="How It Works" />
+              <TopNavLink to="/admin" label="Admin" />
             </nav>
           </div>
 

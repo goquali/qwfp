@@ -257,3 +257,43 @@ export async function getUsageLog(subscriptionId: string, limit: number = 50) {
     .orderBy(desc(aiUsageLog.createdAt))
     .limit(limit);
 }
+
+// --- Admin functions ---
+
+export async function getAllSubscriptions() {
+  return db.select().from(subscriptions);
+}
+
+export async function getRevenueSummary() {
+  const allSubs = await db.select().from(subscriptions);
+
+  const MONTHLY_PRICES: Record<string, number> = {
+    free: 0,
+    essentials: 99,
+    pro: 499,
+    enterprise: 1999,
+  };
+
+  let totalMRR = 0;
+  const tierCounts: Record<string, number> = { free: 0, essentials: 0, pro: 0, enterprise: 0 };
+  let totalCreditsUsed = 0;
+  let totalCreditsIncluded = 0;
+
+  for (const sub of allSubs) {
+    tierCounts[sub.tier] = (tierCounts[sub.tier] || 0) + 1;
+    totalMRR += MONTHLY_PRICES[sub.tier] || 0;
+    totalCreditsUsed += sub.creditsUsed;
+    totalCreditsIncluded += sub.creditsIncluded;
+  }
+
+  return {
+    totalCustomers: allSubs.length,
+    totalMRR,
+    totalARR: totalMRR * 12,
+    tierCounts,
+    totalCreditsUsed,
+    totalCreditsIncluded,
+    creditUtilization: totalCreditsIncluded > 0 ? ((totalCreditsUsed / totalCreditsIncluded) * 100).toFixed(1) : "0",
+    subscriptions: allSubs,
+  };
+}

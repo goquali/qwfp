@@ -9,6 +9,7 @@ import TADashboard from "./pages/TADashboard";
 import HowItWorks from "./pages/HowItWorks";
 import Onboarding from "./pages/Onboarding";
 import Pricing from "./pages/Pricing";
+import AdminDashboard from "./pages/AdminDashboard";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>
