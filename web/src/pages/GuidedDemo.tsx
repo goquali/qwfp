@@ -695,12 +695,10 @@ export default function GuidedDemo() {
       <div style={{ textAlign: "center", padding: "60px 0 40px" }}>
         <h1
           style={{
-            fontSize: "38px",
-            fontWeight: 700,
-            letterSpacing: "-1px",
-            background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            fontSize: "40px",
+            fontWeight: 500,
+            letterSpacing: "-0.8px",
+            color: "var(--text)",
             marginBottom: "24px",
           }}
         >
