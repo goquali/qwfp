@@ -13,7 +13,7 @@ import type {
 } from "../api/types";
 import ProgressBar from "../components/ProgressBar";
 import MoneyDisplay from "../components/MoneyDisplay";
-import StatusBadge from "../components/StatusBadge";
+import ActivityFeed from "../components/ActivityFeed";
 
 const PIPELINE_STATUSES = ["draft", "open", "sourcing", "offer", "filled", "cancelled"] as const;
 
@@ -275,10 +275,14 @@ export default function ExecutiveDashboard() {
 
       {/* Page Header */}
       <div className="page-header" style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "28px", margin: "0 0 4px" }}>Hiring Command Center</h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h1 style={{ fontSize: "28px", margin: 0 }}>Hiring Command Center</h1>
+          <span className="live-badge"><span className="live-dot" /> Live</span>
+        </div>
+        <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: 4 }}>
           FY26 Workforce Plan
           {activeCycle && <> — {activeCycle.name}</>}
+          <span className="timestamp-muted" style={{ marginLeft: 8 }}>Updated just now</span>
         </p>
       </div>
 
@@ -633,6 +637,11 @@ export default function ExecutiveDashboard() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Activity Feed */}
+      <div style={{ marginTop: 24 }}>
+        <ActivityFeed />
       </div>
     </div>
   );
